@@ -1,0 +1,294 @@
+'use client';
+
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
+import { Star, Clock, Truck, MapPin, ArrowLeft, Heart, Share2, Plus, Minus, X } from 'lucide-react';
+import Link from 'next/link';
+import { restaurants, menuItems, MenuItem, Extra } from '@/data/mock';
+import { useStore } from '@/store/useStore';
+
+export default function RestaurantPage() {
+  const params = useParams();
+  const restaurant = restaurants.find((r) => r.id === params.id);
+  const { addToCart } = useStore();
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedExtras, setSelectedExtras] = useState<Extra[]>([]);
+  const [removedItems, setRemovedItems] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
+
+  if (!restaurant) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 text-center">
+        <p className="text-gray-500">Restaurante não encontrado</p>
+        <Link href="/" className="text-primary-500 font-medium mt-4 inline-block">
+          Voltar ao início
+        </Link>
+      </div>
+    );
+  }
+
+  const menuCategories = ['Entradas', 'Pratos Principais', 'Bebidas', 'Sobremesas'];
+
+  const handleAddToCart = () => {
+    if (selectedItem) {
+      addToCart(selectedItem, quantity, selectedExtras, removedItems, notes);
+      setSelectedItem(null);
+      setQuantity(1);
+      setSelectedExtras([]);
+      setRemovedItems([]);
+      setNotes('');
+    }
+  };
+
+  const toggleExtra = (extra: Extra) => {
+    setSelectedExtras((prev) =>
+      prev.find((e) => e.id === extra.id)
+        ? prev.filter((e) => e.id !== extra.id)
+        : [...prev, extra]
+    );
+  };
+
+  const toggleRemoved = (item: string) => {
+    setRemovedItems((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
+    );
+  };
+
+  const itemTotal = selectedItem
+    ? (selectedItem.price + selectedExtras.reduce((sum, e) => sum + e.price, 0)) * quantity
+    : 0;
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* Cover Image */}
+      <div className="relative h-48 sm:h-64 lg:h-72">
+        <img
+          src={restaurant.image}
+          alt={restaurant.name}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute top-4 left-4 right-4 flex justify-between">
+          <Link
+            href="/"
+            className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div className="flex gap-2">
+            <button className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
+              <Heart className="w-4 h-4" />
+            </button>
+            <button className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Restaurant Info */}
+      <div className="bg-white -mt-6 relative rounded-t-3xl px-4 sm:px-6 pt-6 pb-4 border-b border-gray-100">
+        <div className="flex items-start gap-4">
+          <img
+            src={restaurant.logo}
+            alt={restaurant.name}
+            className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md -mt-12"
+          />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
+            <div className="flex items-center flex-wrap gap-3 mt-1.5 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                <span className="font-semibold text-gray-700">{restaurant.rating}</span>
+                <span>({restaurant.reviews})</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {restaurant.deliveryTime}
+              </span>
+              <span className="flex items-center gap-1">
+                <Truck className="w-3.5 h-3.5" />
+                {restaurant.deliveryFee} MT
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
+                {restaurant.distance}
+              </span>
+            </div>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            restaurant.isOpen ? 'bg-secondary-100 text-secondary-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {restaurant.isOpen ? 'Aberto' : 'Fechado'}
+          </span>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">Pedido mínimo: {restaurant.minOrder} MT</p>
+      </div>
+
+      {/* Menu */}
+      <div className="px-4 sm:px-6 py-6 space-y-8">
+        {menuCategories.map((category) => {
+          const items = menuItems.filter((item) => item.category === category);
+          if (items.length === 0) return null;
+          return (
+            <section key={category}>
+              <h2 className="text-lg font-bold text-gray-900 mb-4">{category}</h2>
+              <div className="space-y-3">
+                {items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedItem(item)}
+                    className="w-full card flex gap-4 p-3 sm:p-4 text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{item.name}</h3>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-2">{item.description}</p>
+                      <p className="text-primary-600 font-bold mt-2 text-sm sm:text-base">{item.price} MT</p>
+                    </div>
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0">
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      <div className="absolute bottom-1 right-1 w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center shadow-lg">
+                        <Plus className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      {/* Item Detail Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSelectedItem(null)} />
+          <div className="relative bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl max-h-[85vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
+              <h3 className="font-bold text-lg">{selectedItem.name}</h3>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-5">
+              {/* Image */}
+              <img
+                src={selectedItem.image}
+                alt={selectedItem.name}
+                className="w-full h-40 object-cover rounded-xl"
+              />
+
+              <p className="text-sm text-gray-600">{selectedItem.description}</p>
+              <p className="text-lg font-bold text-primary-600">{selectedItem.price} MT</p>
+
+              {/* Extras */}
+              {selectedItem.extras && selectedItem.extras.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Extras</h4>
+                  <div className="space-y-2">
+                    {selectedItem.extras.map((extra) => (
+                      <label
+                        key={extra.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedExtras.some((e) => e.id === extra.id)}
+                            onChange={() => toggleExtra(extra)}
+                            className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-700">{extra.name}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-600">+{extra.price} MT</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Remove Items */}
+              {selectedItem.removable && selectedItem.removable.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Retirar ingredientes</h4>
+                  <div className="space-y-2">
+                    {selectedItem.removable.map((item) => (
+                      <label
+                        key={item}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={removedItems.includes(item)}
+                          onChange={() => toggleRemoved(item)}
+                          className="w-4 h-4 text-red-500 rounded focus:ring-red-500"
+                        />
+                        <span className="text-sm text-gray-700">Sem {item}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Observações</h4>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ex: Bem passado, sem cebola..."
+                  className="input-field h-20 resize-none text-sm"
+                />
+              </div>
+
+              {/* Quantity */}
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-gray-900">Quantidade</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="font-bold text-lg w-6 text-center">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center hover:bg-primary-600 transition-colors"
+                  >
+                    <Plus className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Add to Cart */}
+              <button
+                onClick={handleAddToCart}
+                className="w-full btn-primary flex items-center justify-center gap-2"
+              >
+                <ShoppingBagIcon />
+                <span>Adicionar - {itemTotal} MT</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShoppingBagIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+      <path d="M3 6h18"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  );
+}
