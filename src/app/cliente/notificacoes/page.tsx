@@ -1,0 +1,74 @@
+'use client';
+
+import { Bell, Package, Tag, Info, Check } from 'lucide-react';
+import { useStore } from '@/store/useStore';
+
+const typeIcons = {
+  order: Package,
+  promo: Tag,
+  system: Info,
+};
+
+const typeColors = {
+  order: 'bg-blue-50 text-blue-500',
+  promo: 'bg-primary-50 text-primary-500',
+  system: 'bg-gray-50 text-gray-500',
+};
+
+export default function NotificationsPage() {
+  const { notifications, markNotificationRead } = useStore();
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+          <Bell className="w-5 h-5 text-blue-500" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Notificacoes</h1>
+          <p className="text-sm text-gray-500">{notifications.filter((n) => !n.read).length} nao lidas</p>
+        </div>
+      </div>
+
+      {notifications.length === 0 ? (
+        <div className="text-center py-16">
+          <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">Sem notificacoes</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {notifications.map((notif) => {
+            const Icon = typeIcons[notif.type];
+            const colorClass = typeColors[notif.type];
+            return (
+              <button
+                key={notif.id}
+                onClick={() => markNotificationRead(notif.id)}
+                className={`w-full card p-4 flex items-start gap-3 text-left transition-colors ${
+                  !notif.read ? 'bg-blue-50/50 border-blue-100' : 'hover:bg-gray-50'
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className={`text-sm ${!notif.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                      {notif.title}
+                    </p>
+                    {!notif.read && <div className="w-2 h-2 bg-primary-500 rounded-full" />}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">{notif.message}</p>
+                  <p className="text-[10px] text-gray-400 mt-1">{notif.time} atras</p>
+                </div>
+                {!notif.read && (
+                  <Check className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

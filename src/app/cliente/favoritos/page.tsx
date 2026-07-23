@@ -2,11 +2,13 @@
 
 import { Heart } from 'lucide-react';
 import { restaurants } from '@/data/mock';
+import { useStore } from '@/store/useStore';
 import RestaurantCard from '@/components/home/RestaurantCard';
 import Link from 'next/link';
 
 export default function FavoritesPage() {
-  const favoriteRestaurants = restaurants.slice(0, 5);
+  const { favorites } = useStore();
+  const favoriteRestaurants = restaurants.filter((r) => favorites.includes(r.id));
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -32,8 +34,8 @@ export default function FavoritesPage() {
             <Heart className="w-8 h-8 text-gray-300" />
           </div>
           <h2 className="font-bold text-gray-700 mb-2">Sem favoritos ainda</h2>
-          <p className="text-sm text-gray-500 mb-6">Guarde os seus restaurantes preferidos aqui</p>
-          <Link href="/" className="btn-primary inline-block">
+          <p className="text-sm text-gray-500 mb-6">Toque no coracao em qualquer restaurante para guardar aqui</p>
+          <Link href="/cliente" className="btn-primary inline-block">
             Explorar restaurantes
           </Link>
         </div>
