@@ -2,6 +2,7 @@
 
 import Header from '@/components/layout/Header';
 import BottomNav from '@/components/layout/BottomNav';
+import Footer from '@/components/layout/Footer';
 
 export default function ClienteLayout({
   children,
@@ -14,6 +15,9 @@ export default function ClienteLayout({
       <main className="pb-20 md:pb-0">
         {children}
       </main>
+      <div className="hidden md:block">
+        <Footer />
+      </div>
       <BottomNav />
     </div>
   );

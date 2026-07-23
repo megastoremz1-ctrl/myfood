@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, Search, X, Save, Image } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, Search, X, Save, Image, Upload, Camera } from 'lucide-react';
 import { menuItems as initialMenuItems, MenuItem } from '@/data/mock';
 
 interface MenuItemWithAvailability extends MenuItem {
@@ -15,6 +15,8 @@ interface FormData {
   category: string;
   image: string;
 }
+
+type ImageMode = 'upload' | 'url';
 
 const emptyForm: FormData = {
   name: '',
@@ -36,6 +38,45 @@ export default function PartnerMenuPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemWithAvailability | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [imageMode, setImageMode] = useState<ImageMode>('upload');
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecione um ficheiro de imagem (JPG, PNG, WEBP)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('A imagem deve ter no maximo 5MB');
+      return;
+    }
+
+    // Create preview using FileReader
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setImagePreview(dataUrl);
+      setFormData((prev) => ({ ...prev, image: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeImage = () => {
+    setImagePreview('');
+    setFormData((prev) => ({ ...prev, image: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const filtered = items.filter((i) => {
     const matchSearch =
@@ -56,6 +97,8 @@ export default function PartnerMenuPage() {
   const openAddModal = () => {
     setEditingItem(null);
     setFormData(emptyForm);
+    setImagePreview('');
+    setImageMode('upload');
     setShowModal(true);
   };
 
@@ -68,6 +111,8 @@ export default function PartnerMenuPage() {
       category: item.category,
       image: item.image,
     });
+    setImagePreview(item.image);
+    setImageMode(item.image.startsWith('data:') ? 'upload' : 'url');
     setShowModal(true);
   };
 
@@ -75,6 +120,8 @@ export default function PartnerMenuPage() {
     setShowModal(false);
     setEditingItem(null);
     setFormData(emptyForm);
+    setImagePreview('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSave = () => {
@@ -350,33 +397,120 @@ export default function PartnerMenuPage() {
                 </div>
               </div>
 
-              {/* Image URL */}
+              {/* Image */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  URL da Imagem
+                  Imagem do prato
                 </label>
-                <div className="relative">
-                  <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="url"
-                    value={formData.image}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, image: e.target.value }))
-                    }
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    className="input-field pl-10 text-sm"
-                  />
+
+                {/* Mode toggle */}
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setImageMode('upload')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      imageMode === 'upload' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Do dispositivo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageMode('url')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      imageMode === 'url' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    }`}
+                  >
+                    <Image className="w-3.5 h-3.5" /> URL
+                  </button>
                 </div>
-                {formData.image && (
-                  <div className="mt-2 rounded-xl overflow-hidden border border-gray-200">
-                    <img
-                      src={formData.image}
-                      alt="Preview"
-                      className="w-full h-32 object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
+
+                {imageMode === 'upload' ? (
+                  <div>
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={handleFileSelect}
+                      className="hidden"
                     />
+
+                    {/* Upload area */}
+                    {!imagePreview || imagePreview.startsWith('http') ? (
+                      <button
+                        type="button"
+                        onClick={triggerFileInput}
+                        className="w-full h-36 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary-400 hover:bg-primary-50/50 transition-colors cursor-pointer"
+                      >
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <p className="text-sm text-gray-500 font-medium">Carregar imagem</p>
+                        <p className="text-[10px] text-gray-400">JPG, PNG ou WEBP (max 5MB)</p>
+                      </button>
+                    ) : (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full h-36 object-cover rounded-xl border border-gray-200"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={triggerFileInput}
+                            className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white shadow-sm"
+                            title="Alterar imagem"
+                          >
+                            <Upload className="w-4 h-4 text-gray-600" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={removeImage}
+                            className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white shadow-sm"
+                            title="Remover imagem"
+                          >
+                            <X className="w-4 h-4 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="relative">
+                      <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="url"
+                        value={formData.image.startsWith('data:') ? '' : formData.image}
+                        onChange={(e) => {
+                          setFormData((prev) => ({ ...prev, image: e.target.value }));
+                          setImagePreview(e.target.value);
+                        }}
+                        placeholder="https://exemplo.com/imagem.jpg"
+                        className="input-field pl-10 text-sm"
+                      />
+                    </div>
+                    {formData.image && !formData.image.startsWith('data:') && (
+                      <div className="mt-2 rounded-xl overflow-hidden border border-gray-200 relative">
+                        <img
+                          src={formData.image}
+                          alt="Preview"
+                          className="w-full h-32 object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={removeImage}
+                          className="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-lg flex items-center justify-center hover:bg-white shadow-sm"
+                        >
+                          <X className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
