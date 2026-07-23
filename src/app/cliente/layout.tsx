@@ -3,6 +3,7 @@
 import Header from '@/components/layout/Header';
 import BottomNav from '@/components/layout/BottomNav';
 import Footer from '@/components/layout/Footer';
+import NotificationBanner from '@/components/pwa/NotificationBanner';
 
 export default function ClienteLayout({
   children,
@@ -19,6 +20,7 @@ export default function ClienteLayout({
         <Footer />
       </div>
       <BottomNav />
+      <NotificationBanner />
     </div>
   );
 }
