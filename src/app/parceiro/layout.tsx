@@ -22,13 +22,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       <header className="bg-white border-b border-gray-100 px-4 sm:px-6 py-3 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-xl flex items-center justify-center">
-              <ChefHat className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="font-bold text-gray-900 text-sm">MyFood Partner</h1>
-              <p className="text-[10px] text-gray-500">Mundo&apos;s Restaurant</p>
-            </div>
+            <img src="/logo-partner.svg" alt="MyFood Partner" className="h-9" />
           </div>
           <div className="flex items-center gap-2">
             <Link href="/" className="p-2 hover:bg-gray-50 rounded-xl text-gray-500 hover:text-gray-700" title="Portal">

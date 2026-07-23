@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 50" fill="none">
+  <defs>
+    <linearGradient id="adminGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="8" width="34" height="34" rx="10" fill="url(#adminGrad)"/>
+  <!-- Shield icon -->
+  <path d="M19 14 L19 28 Q19 36 27 38 Q35 36 35 28 L35 14 L27 11 Z" stroke="white" stroke-width="2" fill="white" fill-opacity="0.2"/>
+  <path d="M23 26 L26 29 L32 22" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="42" y="35" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#111827">My</text>
+  <text x="72" y="35" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#8b5cf6">Food</text>
+  <text x="120" y="35" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#6b7280">Admin</text>
+</svg>

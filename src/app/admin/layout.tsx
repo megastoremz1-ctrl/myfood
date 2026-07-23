@@ -26,13 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="hidden lg:block w-56 min-h-screen bg-white border-r border-gray-100 sticky top-0 self-start">
         <div className="p-4">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-sm">M</span>
-            </div>
-            <div>
-              <span className="font-bold text-gray-900 text-sm">MyFood</span>
-              <p className="text-[10px] text-gray-500">Admin Panel</p>
-            </div>
+            <img src="/logo-admin.svg" alt="MyFood Admin" className="h-9" />
           </div>
 
           <nav className="space-y-0.5">

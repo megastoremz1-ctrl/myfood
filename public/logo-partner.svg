@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 50" fill="none">
+  <defs>
+    <linearGradient id="partnerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="8" width="34" height="34" rx="10" fill="url(#partnerGrad)"/>
+  <!-- Chef hat -->
+  <path d="M12 30 Q12 20 19 18 Q14 14 19 11 Q24 8 28 12 Q32 8 36 12 Q40 16 35 18 Q42 20 42 30 Z" fill="white" fill-opacity="0.9"/>
+  <text x="42" y="35" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#111827">My</text>
+  <text x="72" y="35" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#22c55e">Food</text>
+  <text x="120" y="35" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#6b7280">Partner</text>
+</svg>

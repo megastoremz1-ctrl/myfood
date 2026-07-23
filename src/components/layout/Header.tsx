@@ -17,12 +17,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/cliente" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-sm">M</span>
-            </div>
-            <span className="text-lg font-bold text-gray-900 hidden sm:block">
-              My<span className="text-primary-500">Food</span>
-            </span>
+            <img src="/logo.svg" alt="MyFood" className="h-8" />
           </Link>
 
           {/* Address Selector */}

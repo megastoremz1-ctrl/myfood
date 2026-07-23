@@ -25,12 +25,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">M</span>
-              </div>
-              <span className="text-xl font-bold text-white">
-                My<span className="text-primary-400">Food</span>
-              </span>
+              <img src="/logo-white.svg" alt="MyFood" className="h-8" />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-4">
               A comida que voce ama, entregue onde estiver. A melhor plataforma de entregas de Mocambique.
