@@ -6,12 +6,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-com
 
 // Initialize Firebase in the service worker
 firebase.initializeApp({
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'your-app.firebaseapp.com',
-  projectId: 'your-project-id',
-  storageBucket: 'your-app.appspot.com',
-  messagingSenderId: '000000000000',
-  appId: '1:000000000000:web:000000000000',
+  apiKey: "AIzaSyCctToKhcFqVr8vXlMHJ-zqa2OOzXu2da8",
+  authDomain: "myfoodmz.firebaseapp.com",
+  projectId: "myfoodmz",
+  storageBucket: "myfoodmz.firebasestorage.app",
+  messagingSenderId: "224499148683",
+  appId: "1:224499148683:web:0ba83f007a35a8b492318e",
+  measurementId: "G-FFBVDEG5V7"
 });
 
 const messaging = firebase.messaging();
