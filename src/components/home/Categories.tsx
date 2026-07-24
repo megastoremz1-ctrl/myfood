@@ -1,19 +1,22 @@
 'use client';
 
-import { categories } from '@/data/mock';
+import { categories as defaultCategories } from '@/data/mock';
 import { categoryIconMap } from './CategoryIcons';
+import { Category } from '@/data/mock';
 
 interface Props {
+  categories?: Category[];
   selectedCategory: string | null;
   onSelectCategory: (slug: string | null) => void;
 }
 
-export default function Categories({ selectedCategory, onSelectCategory }: Props) {
+export default function Categories({ categories, selectedCategory, onSelectCategory }: Props) {
+  const cats = categories && categories.length > 0 ? categories : defaultCategories;
   return (
     <section className="px-4 sm:px-0">
       <h2 className="text-lg font-bold text-gray-900 mb-3">Categorias</h2>
       <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 sm:gap-3">
-        {categories.map((cat) => {
+        {cats.map((cat) => {
           const isActive = selectedCategory === cat.slug;
           const IconComponent = categoryIconMap[cat.slug];
           return (

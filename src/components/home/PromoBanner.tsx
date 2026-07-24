@@ -2,17 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { promotions } from '@/data/mock';
+import { promotions as defaultPromotions } from '@/data/mock';
 
-export default function PromoBanner() {
+interface Props {
+  promotions?: any[];
+}
+
+export default function PromoBanner({ promotions }: Props) {
+  const promos = promotions && promotions.length > 0 ? promotions : defaultPromotions;
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % promotions.length);
+      setCurrent((prev) => (prev + 1) % promos.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [promos.length]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl mx-4 sm:mx-0">
@@ -20,7 +25,7 @@ export default function PromoBanner() {
         className="flex transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${current * 100}%)` }}
       >
-        {promotions.map((promo) => (
+        {promos.map((promo) => (
           <div
             key={promo.id}
             className={`min-w-full relative h-40 sm:h-48 bg-gradient-to-r ${promo.color} rounded-2xl p-6 flex flex-col justify-center`}
@@ -33,7 +38,7 @@ export default function PromoBanner() {
 
       {/* Navigation Dots */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
-        {promotions.map((_, idx) => (
+        {promos.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrent(idx)}
@@ -46,13 +51,13 @@ export default function PromoBanner() {
 
       {/* Arrows */}
       <button
-        onClick={() => setCurrent((prev) => (prev - 1 + promotions.length) % promotions.length)}
+        onClick={() => setCurrent((prev) => (prev - 1 + promos.length) % promos.length)}
         className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/40 transition-colors"
       >
         <ChevronLeft className="w-4 h-4 text-white" />
       </button>
       <button
-        onClick={() => setCurrent((prev) => (prev + 1) % promotions.length)}
+        onClick={() => setCurrent((prev) => (prev + 1) % promos.length)}
         className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/40 transition-colors"
       >
         <ChevronRight className="w-4 h-4 text-white" />
