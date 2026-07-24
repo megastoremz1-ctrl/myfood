@@ -55,8 +55,8 @@ export default function AuthPage() {
     if (!result.success) {
       setError(result.error || 'Erro ao registar.');
     } else {
-      setSuccess('Conta criada! Verifique o seu email para confirmar.');
-      setTimeout(() => setMode('login'), 3000);
+      setSuccess('Conta criada com sucesso!');
+      setTimeout(() => router.push('/auth/bem-vindo'), 1000);
     }
   };
 

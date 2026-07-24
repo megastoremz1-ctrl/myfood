@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { MapPin, ShoppingBag, Bell, Search, ChevronDown } from 'lucide-react';
+import { MapPin, ShoppingBag, Bell, Search, ChevronDown, User, LogIn } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { useState } from 'react';
 
 export default function Header() {
   const { selectedAddress, getCartCount, addresses, setSelectedAddress, notifications } = useStore();
+  const { profile, loading } = useAuth();
   const cartCount = getCartCount();
   const unreadNotifications = notifications.filter((n) => !n.read).length;
   const [showAddresses, setShowAddresses] = useState(false);
@@ -52,9 +54,6 @@ export default function Header() {
                         <p className="text-sm font-medium text-gray-900">{addr.label}</p>
                         <p className="text-xs text-gray-500 truncate">{addr.address}</p>
                       </div>
-                      {addr.isDefault && (
-                        <span className="text-[10px] bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded-full font-medium ml-auto">Padrao</span>
-                      )}
                     </button>
                   ))}
                   <Link
@@ -103,6 +102,31 @@ export default function Header() {
                 </span>
               )}
             </Link>
+
+            {/* User Avatar / Login */}
+            {!loading && (
+              profile ? (
+                <Link href="/cliente/perfil" className="ml-1 flex items-center gap-2 p-1 hover:bg-gray-50 rounded-xl transition-colors">
+                  {profile.avatarUrl ? (
+                    <img src={profile.avatarUrl} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary-100" />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">
+                        {profile.name ? profile.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : <User className="w-4 h-4" />}
+                      </span>
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[80px] truncate">
+                    {profile.name?.split(' ')[0] || 'Perfil'}
+                  </span>
+                </Link>
+              ) : (
+                <Link href="/auth" className="ml-1 flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white px-3 py-1.5 rounded-xl transition-colors text-sm font-medium">
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span className="hidden sm:block">Entrar</span>
+                </Link>
+              )
+            )}
           </div>
         </div>
 
