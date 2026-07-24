@@ -493,3 +493,178 @@ export async function createReview(data: {
 
   return !error;
 }
+
+
+
+// ==========================================
+// BUSINESS PANEL - Restaurant Orders
+// ==========================================
+
+export async function getRestaurantOrders(restaurantId?: string) {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let query = supabase
+    .from('orders')
+    .select(`
+      *,
+      profiles!orders_customer_id_fkey(full_name, phone),
+      order_items(*)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (restaurantId) {
+    query = query.eq('restaurant_id', restaurantId);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  return data.map((o: any) => ({
+    id: o.id,
+    orderNumber: o.order_number,
+    customer: o.profiles?.full_name || 'Cliente',
+    phone: o.profiles?.phone || '',
+    items: o.order_items?.map((i: any) => `${i.name} x${i.quantity}`).join(', ') || '',
+    total: parseFloat(o.total),
+    status: o.status,
+    paymentMethod: o.payment_method,
+    address: o.delivery_address || '',
+    createdAt: o.created_at,
+    estimatedTime: o.estimated_delivery_time,
+  }));
+}
+
+export async function getMyRestaurant() {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('*')
+    .eq('owner_id', user.id)
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+// ==========================================
+// DRIVER PANEL - Available Deliveries
+// ==========================================
+
+export async function getAvailableDeliveries() {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      restaurants(name, address),
+      profiles!orders_customer_id_fkey(full_name)
+    `)
+    .eq('status', 'ready')
+    .is('driver_id', null)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error || !data) return [];
+
+  return data.map((o: any) => ({
+    id: o.id,
+    orderNumber: o.order_number,
+    restaurant: o.restaurants?.name || 'Restaurante',
+    pickupAddress: o.restaurants?.address || '',
+    customer: o.profiles?.full_name || 'Cliente',
+    deliveryAddress: o.delivery_address || '',
+    total: parseFloat(o.total),
+    earnings: Math.round(parseFloat(o.total) * 0.15),
+  }));
+}
+
+export async function acceptDelivery(orderId: string) {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ driver_id: user.id, status: 'picked_up' })
+    .eq('id', orderId);
+
+  return !error;
+}
+
+export async function completeDelivery(orderId: string) {
+  const supabase = getSupabase();
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'delivered', actual_delivery_time: new Date().toISOString() })
+    .eq('id', orderId);
+
+  return !error;
+}
+
+// ==========================================
+// ADMIN - Platform Stats
+// ==========================================
+
+export async function getAdminStats() {
+  const supabase = getSupabase();
+
+  const [
+    { count: totalOrders },
+    { count: totalRestaurants },
+    { count: totalUsers },
+    { count: totalDrivers },
+  ] = await Promise.all([
+    supabase.from('orders').select('*', { count: 'exact', head: true }),
+    supabase.from('restaurants').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'client'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'driver'),
+  ]);
+
+  return {
+    totalOrders: totalOrders || 0,
+    totalRestaurants: totalRestaurants || 0,
+    totalUsers: totalUsers || 0,
+    totalDrivers: totalDrivers || 0,
+  };
+}
+
+export async function getAllOrders(options?: { status?: string; limit?: number }) {
+  const supabase = getSupabase();
+
+  let query = supabase
+    .from('orders')
+    .select(`
+      *,
+      profiles!orders_customer_id_fkey(full_name),
+      restaurants(name)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(options?.limit || 50);
+
+  if (options?.status) {
+    query = query.eq('status', options.status);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  return data.map((o: any) => ({
+    id: o.id,
+    orderNumber: o.order_number,
+    customer: o.profiles?.full_name || 'Cliente',
+    restaurant: o.restaurants?.name || 'Restaurante',
+    total: parseFloat(o.total),
+    status: o.status,
+    paymentMethod: o.payment_method,
+    paymentStatus: o.payment_status,
+    createdAt: o.created_at,
+  }));
+}

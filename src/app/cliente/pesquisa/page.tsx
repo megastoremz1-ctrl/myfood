@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Mic, Clock, TrendingUp, X } from 'lucide-react';
-import { restaurants, categories } from '@/data/mock';
+import { categories } from '@/data/mock';
+import { getRestaurants } from '@/lib/db';
+import { Restaurant } from '@/data/mock';
 import RestaurantCard from '@/components/home/RestaurantCard';
 
 const recentSearches = ['Frango piri-piri', 'Pizza', 'Sushi', 'Cafe'];
@@ -10,14 +12,24 @@ const trending = ['Matapa', 'Camarao grelhado', 'Burger', 'Gelado'];
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Restaurant[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  const filteredRestaurants = query.length > 1
-    ? restaurants.filter(
-        (r) =>
-          r.name.toLowerCase().includes(query.toLowerCase()) ||
-          r.categories.some((c) => c.includes(query.toLowerCase()))
-      )
-    : [];
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const data = await getRestaurants({ search: query });
+      setResults(data as Restaurant[]);
+      setSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const isSearching = query.length > 1;
 
@@ -48,13 +60,18 @@ export default function SearchPage() {
 
       {isSearching ? (
         <div>
-          {filteredRestaurants.length > 0 ? (
+          {searching ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-gray-500">Pesquisando...</p>
+            </div>
+          ) : results.length > 0 ? (
             <div>
               <p className="text-sm text-gray-500 mb-4">
-                {filteredRestaurants.length} resultado{filteredRestaurants.length > 1 ? 's' : ''} para &quot;{query}&quot;
+                {results.length} resultado{results.length > 1 ? 's' : ''} para &quot;{query}&quot;
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredRestaurants.map((r) => (
+                {results.map((r) => (
                   <RestaurantCard key={r.id} restaurant={r} />
                 ))}
               </div>
