@@ -140,7 +140,7 @@ export default function Footer() {
               <p className="text-xs text-gray-500 mb-2">Junte-se a nos</p>
               <div className="flex gap-2">
                 <Link href="/parceiro" className="text-[10px] bg-gray-800 text-gray-400 px-3 py-1.5 rounded-lg font-medium hover:bg-gray-700 hover:text-white transition-colors">
-                  Seja Parceiro
+                  Seja Business
                 </Link>
                 <Link href="/motorista" className="text-[10px] bg-gray-800 text-gray-400 px-3 py-1.5 rounded-lg font-medium hover:bg-gray-700 hover:text-white transition-colors">
                   Seja Entregador

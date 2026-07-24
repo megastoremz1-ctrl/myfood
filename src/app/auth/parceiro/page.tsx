@@ -70,7 +70,7 @@ export default function PartnerAuthPage() {
       email,
       password,
       options: {
-        data: { full_name: ownerName, phone, role: 'partner' },
+        data: { full_name: ownerName, phone, role: 'business' },
       },
     });
 
@@ -95,7 +95,7 @@ export default function PartnerAuthPage() {
     }
 
     setLoading(false);
-    setSuccess('Restaurante registado! A sua conta sera analisada em ate 24h.');
+    setSuccess('Negocio registado! A sua conta sera analisada em ate 24h.');
   };
 
   return (
@@ -104,10 +104,10 @@ export default function PartnerAuthPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/">
-            <img src="/logo-partner.svg" alt="MyFood Partner" className="h-10 mx-auto mb-4" />
+            <img src="/logo-business.svg" alt="MyFood Partner" className="h-10 mx-auto mb-4" />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">
-            {mode === 'login' ? 'Aceder ao painel' : step === 1 ? 'Registar restaurante' : 'Dados do restaurante'}
+            {mode === 'login' ? 'Aceder ao painel' : step === 1 ? 'Registar negocio' : 'Dados do restaurante'}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             {mode === 'login' ? 'Gira o seu restaurante no MyFood' : step === 1 ? 'Passo 1/2 - Conta do proprietario' : 'Passo 2/2 - Informacoes do restaurante'}
@@ -248,7 +248,7 @@ export default function PartnerAuthPage() {
           {!success && (
             <div className="text-center mt-5 text-sm text-gray-500">
               {mode === 'login' ? (
-                <p>Novo parceiro? <button onClick={() => { setMode('register'); setStep(1); setError(''); }} className="text-secondary-500 font-semibold hover:underline">Registar restaurante</button></p>
+                <p>Novo negocio? <button onClick={() => { setMode('register'); setStep(1); setError(''); }} className="text-secondary-500 font-semibold hover:underline">Registar negocio</button></p>
               ) : (
                 <p>Ja tem conta? <button onClick={() => { setMode('login'); setError(''); }} className="text-secondary-500 font-semibold hover:underline">Entrar</button></p>
               )}

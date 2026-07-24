@@ -11,7 +11,7 @@
 
 import { getSupabase } from './supabase';
 
-export type UserRole = 'client' | 'partner' | 'driver' | 'admin';
+export type UserRole = 'client' | 'business' | 'driver' | 'admin';
 
 export interface AuthResult {
   success: boolean;

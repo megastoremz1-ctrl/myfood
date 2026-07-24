@@ -17,8 +17,8 @@ const panels = [
   {
     href: '/parceiro',
     icon: ChefHat,
-    title: 'MyFood Partner',
-    subtitle: 'Painel do Restaurante',
+    title: 'MyFood Business',
+    subtitle: 'Painel do Negocio',
     description: 'Gira pedidos, menu, promoções e relatórios do seu restaurante',
     color: 'from-secondary-500 to-secondary-600',
     iconBg: 'bg-secondary-100',

@@ -71,7 +71,7 @@ export async function requestNotificationPermission(): Promise<{
 /**
  * Set user identity for targeted notifications
  */
-export async function setUserIdentity(userId: string, role: 'client' | 'partner' | 'driver'): Promise<void> {
+export async function setUserIdentity(userId: string, role: 'client' | 'business' | 'driver'): Promise<void> {
   if (typeof window === 'undefined') return;
 
   if (PROVIDER === 'onesignal' || PROVIDER === 'both') {
@@ -132,7 +132,7 @@ export async function sendNotification(options: {
         tags = [{ key: 'user_role', value: 'client' }];
         break;
       case 'restaurants':
-        tags = [{ key: 'user_role', value: 'partner' }];
+        tags = [{ key: 'user_role', value: 'business' }];
         break;
       case 'drivers':
         tags = [{ key: 'user_role', value: 'driver' }];
