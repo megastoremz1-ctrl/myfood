@@ -205,12 +205,16 @@ export async function createOrder(orderData: {
 
   if (!user) return { success: false, error: 'Nao autenticado' };
 
+  // Check if restaurant ID is a valid UUID (mock data uses "1", "2", etc.)
+  const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const restaurantIdValid = isUuid(orderData.restaurantId);
+
   // Create order
   const { data: order, error: orderErr } = await supabase
     .from('orders')
     .insert({
       customer_id: user.id,
-      restaurant_id: orderData.restaurantId,
+      restaurant_id: restaurantIdValid ? orderData.restaurantId : null,
       subtotal: orderData.subtotal,
       delivery_fee: orderData.deliveryFee,
       discount: orderData.discount,
@@ -231,10 +235,10 @@ export async function createOrder(orderData: {
     return { success: false, error: orderErr?.message || 'Erro ao criar pedido' };
   }
 
-  // Create order items
+  // Create order items (skip menu_item_id if not UUID)
   const orderItems = orderData.items.map(item => ({
     order_id: order.id,
-    menu_item_id: item.menuItemId,
+    menu_item_id: isUuid(item.menuItemId) ? item.menuItemId : null,
     name: item.name,
     price: item.price,
     quantity: item.quantity,
