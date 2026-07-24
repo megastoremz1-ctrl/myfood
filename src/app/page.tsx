@@ -23,6 +23,7 @@ const panels = [
     color: 'from-secondary-500 to-secondary-600',
     iconBg: 'bg-secondary-100',
     iconColor: 'text-secondary-600',
+    authLink: '/auth/parceiro',
   },
   {
     href: '/motorista',
@@ -33,6 +34,7 @@ const panels = [
     color: 'from-blue-500 to-blue-600',
     iconBg: 'bg-blue-100',
     iconColor: 'text-blue-600',
+    authLink: '/auth/motorista',
   },
   {
     href: '/admin',

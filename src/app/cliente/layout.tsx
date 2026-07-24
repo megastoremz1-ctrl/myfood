@@ -4,6 +4,7 @@ import Header from '@/components/layout/Header';
 import BottomNav from '@/components/layout/BottomNav';
 import Footer from '@/components/layout/Footer';
 import NotificationBanner from '@/components/pwa/NotificationBanner';
+import LocationPrompt from '@/components/location/LocationPrompt';
 
 export default function ClienteLayout({
   children,
@@ -21,6 +22,7 @@ export default function ClienteLayout({
       </div>
       <BottomNav />
       <NotificationBanner />
+      <LocationPrompt />
     </div>
   );
 }
