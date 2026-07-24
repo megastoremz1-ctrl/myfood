@@ -34,6 +34,13 @@
     background-color: #f9fafb;
     color: #111827;
   }
+
+  /* Dark mode base */
+  .dark body,
+  .dark {
+    background-color: #111827;
+    color: #f3f4f6;
+  }
 }
 
 @layer components {
@@ -76,6 +83,13 @@
   .card:hover {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
+  .dark .card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+  .dark .card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
   .input-field {
     width: 100%;
     padding: 0.75rem 1rem;
@@ -83,10 +97,21 @@
     border: 1px solid #e5e7eb;
     outline: none;
     transition: all 0.2s;
+    background-color: white;
+    color: #111827;
   }
   .input-field:focus {
     border-color: var(--color-primary-500);
     box-shadow: 0 0 0 2px var(--color-primary-100);
+  }
+  .dark .input-field {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+  }
+  .dark .input-field:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
   }
 }
 

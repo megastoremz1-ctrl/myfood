@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PWAProvider from "@/components/pwa/PWAProvider";
 import { AuthProviderWrapper } from "@/components/auth/AuthProviderWrapper";
+import { ThemeProviderWrapper } from "@/components/providers/ThemeProviderWrapper";
 
 export const metadata: Metadata = {
   title: "MyFood - A comida que voce ama, entregue onde estiver",
@@ -48,9 +49,11 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>
-        <AuthProviderWrapper>
-          {children}
-        </AuthProviderWrapper>
+        <ThemeProviderWrapper>
+          <AuthProviderWrapper>
+            {children}
+          </AuthProviderWrapper>
+        </ThemeProviderWrapper>
         <PWAProvider />
       </body>
     </html>

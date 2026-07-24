@@ -4,12 +4,15 @@ import { useState, useRef, Suspense } from 'react';
 import {
   User, MapPin, CreditCard, Clock, Heart, Tag, Users, Headphones,
   ChevronRight, Bell, LogOut, Star, Plus, Trash2, Check, Home, Camera,
-  Edit3, Save, X, Loader2, Shield, Mail, Phone
+  Edit3, Save, X, Loader2, Shield, Mail, Phone, Moon, Globe
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useTheme } from '@/components/providers/ThemeProvider';
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import LanguageToggle from '@/components/ui/LanguageToggle';
 import { restaurants } from '@/data/mock';
 
 export default function ProfilePageWrapper() {
@@ -23,6 +26,7 @@ export default function ProfilePageWrapper() {
 function ProfilePage() {
   const router = useRouter();
   const { profile, user, loading: authLoading, signOut, updateProfile, uploadAvatar } = useAuth();
+  const { t } = useTheme();
   const { favorites, orderHistory, addresses, addAddress, removeAddress, setDefaultAddress } = useStore();
 
   const [activeTab, setActiveTab] = useState('menu');
@@ -245,9 +249,31 @@ function ProfilePage() {
           ))}
 
           <div className="pt-4 space-y-2">
+            {/* Theme & Language */}
+            <div className="card p-4 space-y-4 mb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                    <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile_dark_mode')}</span>
+                </div>
+                <ThemeToggle />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('profile_language')}</span>
+                </div>
+                <LanguageToggle />
+              </div>
+            </div>
+
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 p-3 hover:bg-red-50 rounded-xl transition-colors text-red-500"
+              className="w-full flex items-center gap-3 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors text-red-500"
             >
               <LogOut className="w-5 h-5" />
               <span className="text-sm font-medium">Terminar sessao</span>
