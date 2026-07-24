@@ -31,7 +31,7 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #ffffff;
+    background-color: #f9fafb;
     color: #111827;
     transition: background-color 0.3s, color 0.3s;
   }

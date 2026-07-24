@@ -94,36 +94,41 @@ export async function getRestaurants(options?: {
 }
 
 export async function getRestaurantById(id: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from('restaurants')
-    .select('*')
-    .eq('id', id)
-    .single();
+  // Check if ID is a valid UUID (DB uses UUIDs, mock uses "1", "2", etc.)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  if (error || !data) {
-    // Try mock
-    const mock = mockRestaurants.find(r => r.id === id);
-    return mock || null;
+  if (isUuid) {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!error && data) {
+      return {
+        id: data.id,
+        name: data.name,
+        image: data.image_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
+        logo: data.logo_url || 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=100&h=100&fit=crop',
+        rating: parseFloat(data.rating) || 0,
+        reviews: data.total_reviews || 0,
+        deliveryTime: `${data.delivery_time_min || 25}-${data.delivery_time_max || 45} min`,
+        deliveryFee: parseFloat(data.delivery_fee) || 50,
+        minOrder: parseFloat(data.min_order) || 200,
+        isOpen: data.is_open,
+        categories: [],
+        distance: '1.5 km',
+        freeDelivery: data.free_delivery,
+        isNew: false,
+        hasPromo: false,
+      };
+    }
   }
 
-  return {
-    id: data.id,
-    name: data.name,
-    image: data.image_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
-    logo: data.logo_url || 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=100&h=100&fit=crop',
-    rating: parseFloat(data.rating) || 0,
-    reviews: data.total_reviews || 0,
-    deliveryTime: `${data.delivery_time_min || 25}-${data.delivery_time_max || 45} min`,
-    deliveryFee: parseFloat(data.delivery_fee) || 50,
-    minOrder: parseFloat(data.min_order) || 200,
-    isOpen: data.is_open,
-    categories: [],
-    distance: '1.5 km',
-    freeDelivery: data.free_delivery,
-    isNew: false,
-    hasPromo: false,
-  };
+  // Fallback to mock
+  const mock = mockRestaurants.find(r => r.id === id);
+  return mock || null;
 }
 
 // ==========================================
@@ -131,38 +136,43 @@ export async function getRestaurantById(id: string) {
 // ==========================================
 
 export async function getMenuItems(restaurantId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from('menu_items')
-    .select(`
-      *,
-      menu_item_extras(*),
-      menu_item_removables(*),
-      menu_categories(name)
-    `)
-    .eq('restaurant_id', restaurantId)
-    .eq('available', true)
-    .order('sort_order');
+  // Check if ID is UUID
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(restaurantId);
 
-  if (error || !data || data.length === 0) {
-    // Fallback to mock
-    return mockMenuItems;
+  if (isUuid) {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select(`
+        *,
+        menu_item_extras(*),
+        menu_item_removables(*),
+        menu_categories(name)
+      `)
+      .eq('restaurant_id', restaurantId)
+      .eq('available', true)
+      .order('sort_order');
+
+    if (!error && data && data.length > 0) {
+      return data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || '',
+        price: parseFloat(item.price),
+        image: item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
+        category: item.menu_categories?.name || 'Outros',
+        extras: item.menu_item_extras?.map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          price: parseFloat(e.price),
+        })) || [],
+        removable: item.menu_item_removables?.map((r: any) => r.name) || [],
+      }));
+    }
   }
 
-  return data.map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description || '',
-    price: parseFloat(item.price),
-    image: item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-    category: item.menu_categories?.name || 'Outros',
-    extras: item.menu_item_extras?.map((e: any) => ({
-      id: e.id,
-      name: e.name,
-      price: parseFloat(e.price),
-    })) || [],
-    removable: item.menu_item_removables?.map((r: any) => r.name) || [],
-  }));
+  // Fallback to mock
+  return mockMenuItems;
 }
 
 // ==========================================

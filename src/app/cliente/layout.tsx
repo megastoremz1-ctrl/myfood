@@ -12,7 +12,7 @@ export default function ClienteLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
       <Header />
       <main className="pb-20 md:pb-0">
         {children}
