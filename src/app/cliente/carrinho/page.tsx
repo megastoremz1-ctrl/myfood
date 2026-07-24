@@ -9,12 +9,11 @@ import { createOrder, validateCoupon } from '@/lib/db';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const paymentMethods = [
-  { id: 'mpesa', name: 'M-Pesa', icon: Smartphone, color: 'text-red-500', desc: '+258 84 ***567' },
-  { id: 'emola', name: 'e-Mola', icon: Smartphone, color: 'text-blue-500', desc: '+258 86 ***234' },
-  { id: 'visa', name: 'Visa', icon: CreditCard, color: 'text-blue-700', desc: '**** 4532' },
-  { id: 'mastercard', name: 'Mastercard', icon: CreditCard, color: 'text-orange-500', desc: '**** 8910' },
-  { id: 'wallet', name: 'Carteira MyFood', icon: Wallet, color: 'text-primary-500', desc: 'Saldo: 250 MT' },
-  { id: 'cash', name: 'Dinheiro na entrega', icon: Banknote, color: 'text-secondary-500', desc: 'Pagar ao entregador' },
+  { id: 'mpesa', name: 'M-Pesa', icon: Smartphone, color: 'text-red-500', desc: 'Pagamento via M-Pesa', needsPhone: true },
+  { id: 'emola', name: 'e-Mola', icon: Smartphone, color: 'text-blue-500', desc: 'Pagamento via e-Mola', needsPhone: true },
+  { id: 'visa', name: 'Visa/Mastercard', icon: CreditCard, color: 'text-blue-700', desc: 'Cartao de credito/debito', needsPhone: false },
+  { id: 'wallet', name: 'Carteira MyFood', icon: Wallet, color: 'text-primary-500', desc: 'Saldo disponivel', needsPhone: false },
+  { id: 'cash', name: 'Dinheiro na entrega', icon: Banknote, color: 'text-secondary-500', desc: 'Pagar ao entregador', needsPhone: false },
 ];
 
 const tipOptions = [0, 20, 50, 100];
@@ -47,6 +46,7 @@ export default function CartPage() {
   const [couponError, setCouponError] = useState('');
   const [showPayments, setShowPayments] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentPhone, setPaymentPhone] = useState('');
 
   const subtotal = getSubtotal();
   const deliveryFee = cartRestaurant?.freeDelivery ? 0 : (cartRestaurant?.deliveryFee || 50);
@@ -321,7 +321,7 @@ export default function CartPage() {
         </div>
 
         {!showPayments ? (
-          <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl">
+          <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800 p-3 rounded-xl">
             {(() => {
               const method = paymentMethods.find((m) => m.id === selectedPayment);
               if (!method) return null;
@@ -329,9 +329,9 @@ export default function CartPage() {
               return (
                 <>
                   <Icon className={`w-5 h-5 ${method.color}`} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{method.name}</p>
-                    <p className="text-xs text-gray-500">{method.desc}</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{method.name}</p>
+                    <p className="text-xs text-gray-500">{method.needsPhone && paymentPhone ? paymentPhone : method.desc}</p>
                   </div>
                 </>
               );
@@ -344,16 +344,16 @@ export default function CartPage() {
               return (
                 <button
                   key={method.id}
-                  onClick={() => { setSelectedPayment(method.id); setShowPayments(false); }}
+                  onClick={() => { setSelectedPayment(method.id); if (!method.needsPhone) setShowPayments(false); }}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
                     selectedPayment === method.id
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-100 hover:border-gray-200'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-gray-100 dark:border-slate-700 hover:border-gray-200'
                   }`}
                 >
                   <Icon className={`w-5 h-5 ${method.color}`} />
                   <div className="text-left flex-1">
-                    <p className="text-sm font-medium text-gray-700">{method.name}</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{method.name}</p>
                     <p className="text-xs text-gray-500">{method.desc}</p>
                   </div>
                   {selectedPayment === method.id && (
@@ -362,6 +362,39 @@ export default function CartPage() {
                 </button>
               );
             })}
+
+            {/* Phone number input for M-Pesa / e-Mola */}
+            {paymentMethods.find(m => m.id === selectedPayment)?.needsPhone && (
+              <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                  Numero para cobranca ({selectedPayment === 'mpesa' ? 'M-Pesa' : 'e-Mola'})
+                </label>
+                <div className="relative">
+                  <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={paymentPhone}
+                    onChange={(e) => setPaymentPhone(e.target.value)}
+                    placeholder={selectedPayment === 'mpesa' ? '+258 84 000 0000' : '+258 86 000 0000'}
+                    className="input-field pl-10 text-sm"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Sera enviado um pedido de pagamento para este numero
+                </p>
+                <button
+                  onClick={() => setShowPayments(false)}
+                  disabled={!paymentPhone || paymentPhone.length < 9}
+                  className={`mt-2 w-full py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    paymentPhone && paymentPhone.length >= 9
+                      ? 'bg-primary-500 text-white hover:bg-primary-600'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Confirmar numero
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
