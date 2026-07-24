@@ -65,9 +65,9 @@ export default function AdminRestaurantesPage() {
       ...r,
       status: index % 5 === 0 ? 'pending' : index % 4 === 0 ? 'suspended' : 'active' as RestaurantStatus,
       commission: 10 + (index * 2),
-      totalOrders: Math.floor(Math.random() * 2000) + 100,
-      totalRevenue: Math.floor(Math.random() * 500000) + 50000,
-      joinDate: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString().split('T')[0],
+      totalOrders: 100 + (index * 250),
+      totalRevenue: 50000 + (index * 60000),
+      joinDate: '2024-0' + (index + 1) + '-15',
     }))
   );
 
