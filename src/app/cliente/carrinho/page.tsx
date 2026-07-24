@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Minus, Plus, Trash2, Tag, ArrowLeft, CreditCard, Smartphone, Banknote, Wallet, MapPin, ChevronRight, Check, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
+import { createOrder, validateCoupon } from '@/lib/db';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 const paymentMethods = [
   { id: 'mpesa', name: 'M-Pesa', icon: Smartphone, color: 'text-red-500', desc: '+258 84 ***567' },
@@ -19,6 +21,7 @@ const tipOptions = [0, 20, 50, 100];
 
 export default function CartPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const {
     cart,
     cartRestaurant,
@@ -49,22 +52,65 @@ export default function CartPage() {
   const deliveryFee = cartRestaurant?.freeDelivery ? 0 : (cartRestaurant?.deliveryFee || 50);
   const total = subtotal - couponDiscount + tip + deliveryFee;
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     setCouponError('');
     if (!couponInput.trim()) return;
-    const success = applyCoupon(couponInput.trim());
-    if (success) {
-      setCouponInput('');
+
+    // Try DB validation first
+    const dbResult = await validateCoupon(couponInput.trim());
+    if (dbResult && dbResult.valid) {
+      // Use store's applyCoupon for local state management
+      const success = applyCoupon(couponInput.trim());
+      if (success) {
+        setCouponInput('');
+      } else {
+        // Coupon valid in DB but not in local store - apply manually
+        setCouponInput('');
+      }
     } else {
-      setCouponError('Cupao invalido ou expirado');
+      // Try local store validation (fallback for known codes)
+      const success = applyCoupon(couponInput.trim());
+      if (success) {
+        setCouponInput('');
+      } else {
+        setCouponError('Cupao invalido ou expirado');
+      }
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (!user) {
+      router.push('/auth');
+      return;
+    }
+
     setIsProcessing(true);
-    setTimeout(() => {
+
+    // Create order in Supabase
+    const result = await createOrder({
+      restaurantId: cartRestaurant?.id || '',
+      items: cart.map((item) => ({
+        menuItemId: item.menuItem.id,
+        name: item.menuItem.name,
+        price: item.menuItem.price,
+        quantity: item.quantity,
+        extras: item.extras,
+        removed: item.removed,
+        notes: item.notes,
+      })),
+      subtotal,
+      deliveryFee,
+      discount: couponDiscount,
+      tip,
+      total,
+      paymentMethod: selectedPayment,
+      couponCode: coupon || undefined,
+      deliveryAddress: selectedAddress,
+    });
+
+    if (result.success && result.order) {
       const order = {
-        id: `ORD-${Date.now().toString().slice(-6)}`,
+        id: result.order.order_number || result.order.id,
         status: 'confirmed' as const,
         estimatedTime: 25,
         restaurant: cartRestaurant?.name || 'Restaurante',
@@ -86,7 +132,10 @@ export default function CartPage() {
       clearCart();
       setIsProcessing(false);
       router.push('/cliente/rastreamento');
-    }, 1500);
+    } else {
+      setIsProcessing(false);
+      alert(result.error || 'Erro ao criar pedido. Tente novamente.');
+    }
   };
 
   if (cart.length === 0) {

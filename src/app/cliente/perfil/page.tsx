@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, Suspense } from 'react';
+import { useState, useRef, Suspense, useEffect } from 'react';
 import {
   User, MapPin, CreditCard, Clock, Heart, Tag, Users, Headphones,
   ChevronRight, Bell, LogOut, Star, Plus, Trash2, Check, Home, Camera,
@@ -13,6 +13,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import LanguageToggle from '@/components/ui/LanguageToggle';
+import { getUserOrders, getUserFavorites, getUserAddresses, addUserAddress, deleteUserAddress } from '@/lib/db';
 import { restaurants } from '@/data/mock';
 
 export default function ProfilePageWrapper() {
@@ -39,8 +40,36 @@ function ProfilePage() {
   const [newLabel, setNewLabel] = useState('');
   const [newAddr, setNewAddr] = useState('');
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [dbOrders, setDbOrders] = useState<any[]>([]);
+  const [dbAddresses, setDbAddresses] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
 
   const favoriteRestaurants = restaurants.filter((r) => favorites.includes(r.id));
+
+  // Load real data from DB
+  useEffect(() => {
+    if (user) {
+      setLoadingData(true);
+      Promise.all([getUserOrders(), getUserAddresses()]).then(([orders, addrs]) => {
+        setDbOrders(orders);
+        setDbAddresses(addrs);
+        setLoadingData(false);
+      });
+    }
+  }, [user]);
+
+  // Use DB orders if available, otherwise fallback to store
+  const displayOrders = dbOrders.length > 0 ? dbOrders : orderHistory.map(o => ({
+    ...o,
+    orderNumber: o.id,
+    restaurantLogo: null,
+  }));
+  const displayAddresses = dbAddresses.length > 0 ? dbAddresses.map((a: any) => ({
+    id: a.id,
+    label: a.label,
+    address: a.address,
+    isDefault: a.is_default,
+  })) : addresses;
 
   // If not logged in, show login prompt
   if (!authLoading && !user) {
@@ -99,8 +128,16 @@ function ProfilePage() {
     router.push('/');
   };
 
-  const handleAddAddress = () => {
+  const handleAddAddress = async () => {
     if (newLabel && newAddr) {
+      // Try DB first
+      if (user) {
+        const result = await addUserAddress({ label: newLabel, address: newAddr });
+        if (result) {
+          setDbAddresses(prev => [...prev, result]);
+        }
+      }
+      // Also add to local store
       addAddress({ id: `a-${Date.now()}`, label: newLabel, address: newAddr, isDefault: false });
       setNewLabel('');
       setNewAddr('');
@@ -185,7 +222,7 @@ function ProfilePage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-gray-100">
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900">{orderHistory.length}</p>
+            <p className="text-lg font-bold text-gray-900">{displayOrders.length}</p>
             <p className="text-xs text-gray-500">Pedidos</p>
           </div>
           <div className="text-center">
@@ -288,14 +325,14 @@ function ProfilePage() {
       {/* Orders Tab */}
       {activeTab === 'orders' && (
         <div className="space-y-3">
-          {orderHistory.length === 0 ? (
+          {displayOrders.length === 0 ? (
             <div className="text-center py-12">
               <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">Nenhum pedido ainda</p>
               <Link href="/cliente" className="text-primary-500 text-sm font-medium mt-2 inline-block">Fazer primeiro pedido</Link>
             </div>
           ) : (
-            orderHistory.map((order) => (
+            displayOrders.map((order: any) => (
               <div key={order.id} className="card p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -329,7 +366,7 @@ function ProfilePage() {
       {/* Addresses Tab */}
       {activeTab === 'addresses' && (
         <div className="space-y-3">
-          {addresses.map((addr) => (
+          {displayAddresses.map((addr: any) => (
             <div key={addr.id} className="card p-4 flex items-center gap-3">
               <MapPin className={`w-5 h-5 flex-shrink-0 ${addr.isDefault ? 'text-primary-500' : 'text-gray-400'}`} />
               <div className="flex-1 min-w-0">

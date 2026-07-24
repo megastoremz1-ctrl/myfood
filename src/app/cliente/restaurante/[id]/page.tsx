@@ -1,30 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Star, Clock, Truck, MapPin, ArrowLeft, Heart, Share2, Plus, Minus, X, ShoppingBag, Check } from 'lucide-react';
+import { Star, Clock, Truck, MapPin, ArrowLeft, Heart, Share2, Plus, Minus, X, ShoppingBag, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { restaurants, menuItems, MenuItem, Extra } from '@/data/mock';
+import { MenuItem, Extra, Restaurant } from '@/data/mock';
+import { getRestaurantById, getMenuItems } from '@/lib/db';
 import { useStore } from '@/store/useStore';
 
 export default function RestaurantPage() {
   const params = useParams();
   const router = useRouter();
-  const restaurant = restaurants.find((r) => r.id === params.id);
   const { addToCart, getCartCount, toggleFavorite, isFavorite } = useStore();
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [menuItemsList, setMenuItemsList] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedExtras, setSelectedExtras] = useState<Extra[]>([]);
   const [removedItems, setRemovedItems] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [addedToast, setAddedToast] = useState(false);
-  const [activeMenuTab, setActiveMenuTab] = useState('Entradas');
+  const [activeMenuTab, setActiveMenuTab] = useState('');
   const cartCount = getCartCount();
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const id = params.id as string;
+      const [rest, items] = await Promise.all([
+        getRestaurantById(id),
+        getMenuItems(id),
+      ]);
+      setRestaurant(rest as Restaurant | null);
+      setMenuItemsList(items as MenuItem[]);
+      // Set first category as active
+      const cats = [...new Set(items.map((i: any) => i.category))];
+      if (cats.length > 0) setActiveMenuTab(cats[0] as string);
+      setLoading(false);
+    }
+    loadData();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (!restaurant) {
     return (
       <div className="max-w-4xl mx-auto p-8 text-center">
-        <p className="text-gray-500">Restaurante nao encontrado</p>
+        <p className="text-gray-500 dark:text-gray-400">Restaurante nao encontrado</p>
         <Link href="/cliente" className="text-primary-500 font-medium mt-4 inline-block">
           Voltar ao inicio
         </Link>
@@ -33,7 +62,7 @@ export default function RestaurantPage() {
   }
 
   const fav = isFavorite(restaurant.id);
-  const menuCategories = ['Entradas', 'Pratos Principais', 'Bebidas', 'Sobremesas'];
+  const menuCategories = [...new Set(menuItemsList.map((i) => i.category))];
 
   const handleAddToCart = () => {
     if (selectedItem) {
@@ -158,7 +187,7 @@ export default function RestaurantPage() {
       {/* Menu Items */}
       <div className="px-4 sm:px-6 py-6">
         <div className="space-y-3">
-          {menuItems
+          {menuItemsList
             .filter((item) => item.category === activeMenuTab)
             .map((item) => (
               <button
