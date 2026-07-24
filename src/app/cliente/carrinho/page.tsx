@@ -47,6 +47,10 @@ export default function CartPage() {
   const [showPayments, setShowPayments] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
 
   const subtotal = getSubtotal();
   const deliveryFee = cartRestaurant?.freeDelivery ? 0 : (cartRestaurant?.deliveryFee || 50);
@@ -344,7 +348,7 @@ export default function CartPage() {
               return (
                 <button
                   key={method.id}
-                  onClick={() => { setSelectedPayment(method.id); if (!method.needsPhone) setShowPayments(false); }}
+                  onClick={() => { setSelectedPayment(method.id); if (!method.needsPhone && method.id !== 'visa') setShowPayments(false); }}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
                     selectedPayment === method.id
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -392,6 +396,96 @@ export default function CartPage() {
                   }`}
                 >
                   Confirmar numero
+                </button>
+              </div>
+            )}
+
+            {/* Card form for Visa/Mastercard */}
+            {selectedPayment === 'visa' && (
+              <div className="mt-3 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Dados do cartao</span>
+                  <div className="ml-auto flex gap-1.5">
+                    <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">VISA</span>
+                    <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold">MC</span>
+                  </div>
+                </div>
+
+                {/* Card Holder */}
+                <div>
+                  <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 block">Nome no cartao</label>
+                  <input
+                    type="text"
+                    value={cardHolder}
+                    onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
+                    placeholder="NOME COMPLETO"
+                    className="input-field text-sm uppercase tracking-wide"
+                  />
+                </div>
+
+                {/* Card Number */}
+                <div>
+                  <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 block">Numero do cartao</label>
+                  <input
+                    type="text"
+                    value={cardNumber}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 16);
+                      setCardNumber(v.replace(/(\d{4})(?=\d)/g, '$1 '));
+                    }}
+                    placeholder="0000 0000 0000 0000"
+                    className="input-field text-sm font-mono tracking-wider"
+                    maxLength={19}
+                  />
+                </div>
+
+                {/* Expiry + CVV */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 block">Validade</label>
+                    <input
+                      type="text"
+                      value={cardExpiry}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setCardExpiry(v.length > 2 ? v.slice(0, 2) + '/' + v.slice(2) : v);
+                      }}
+                      placeholder="MM/AA"
+                      className="input-field text-sm font-mono text-center"
+                      maxLength={5}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1 block">CVV</label>
+                    <input
+                      type="text"
+                      value={cardCvv}
+                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="123"
+                      className="input-field text-sm font-mono text-center"
+                      maxLength={4}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="w-4 h-4 bg-secondary-100 rounded flex items-center justify-center">
+                    <Check className="w-3 h-3 text-secondary-600" />
+                  </div>
+                  <span className="text-[10px] text-gray-400">Pagamento seguro encriptado via PaySuite</span>
+                </div>
+
+                <button
+                  onClick={() => setShowPayments(false)}
+                  disabled={!cardNumber || cardNumber.replace(/\s/g,'').length < 16 || !cardExpiry || cardExpiry.length < 5 || !cardCvv || cardCvv.length < 3 || !cardHolder}
+                  className={`w-full py-2.5 rounded-lg text-xs font-semibold transition-colors ${
+                    cardNumber.replace(/\s/g,'').length >= 16 && cardExpiry.length >= 5 && cardCvv.length >= 3 && cardHolder
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Confirmar cartao
                 </button>
               </div>
             )}
