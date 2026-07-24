@@ -14,7 +14,7 @@ export default function Header() {
   const [showAddresses, setShowAddresses] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
+    <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
@@ -26,10 +26,10 @@ export default function Header() {
           <div className="relative">
             <button
               onClick={() => setShowAddresses(!showAddresses)}
-              className="flex items-center space-x-1.5 bg-gray-50 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors max-w-[200px] sm:max-w-xs"
+              className="flex items-center space-x-1.5 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors max-w-[200px] sm:max-w-xs"
             >
               <MapPin className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
-              <span className="text-xs sm:text-sm text-gray-700 truncate">{selectedAddress}</span>
+              <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 truncate">{selectedAddress}</span>
               <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
             </button>
 
