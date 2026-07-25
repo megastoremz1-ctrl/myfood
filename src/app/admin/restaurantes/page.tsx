@@ -298,11 +298,11 @@ export default function AdminRestaurantesPage() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {restaurant.delivery_fee != null
-                        ? `R$ ${restaurant.delivery_fee.toFixed(2)}`
+                        ? `MT ${restaurant.delivery_fee.toFixed(2)}`
                         : '—'}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">
-                      {new Date(restaurant.created_at).toLocaleDateString('pt-BR')}
+                      {new Date(restaurant.created_at).toLocaleDateString('pt-MZ')}
                     </td>
                     <td className="py-3 px-4">
                       <button
@@ -355,12 +355,12 @@ export default function AdminRestaurantesPage() {
                     </span>
                     <span className="text-gray-600">
                       {restaurant.delivery_fee != null
-                        ? `R$ ${restaurant.delivery_fee.toFixed(2)}`
+                        ? `MT ${restaurant.delivery_fee.toFixed(2)}`
                         : '—'}
                     </span>
                   </div>
                   <span className="text-gray-400 text-xs">
-                    {new Date(restaurant.created_at).toLocaleDateString('pt-BR')}
+                    {new Date(restaurant.created_at).toLocaleDateString('pt-MZ')}
                   </span>
                 </div>
 

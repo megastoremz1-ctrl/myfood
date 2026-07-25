@@ -121,7 +121,7 @@ export default function AdminPedidosPage() {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
-    return date.toLocaleString('pt-BR', {
+    return date.toLocaleString('pt-MZ', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -131,10 +131,7 @@ export default function AdminPedidosPage() {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value || 0);
+    return (value || 0).toLocaleString('pt-MZ') + ' MT';
   };
 
   if (loading) {

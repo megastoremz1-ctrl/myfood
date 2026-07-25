@@ -85,11 +85,11 @@ export default function FinanceiroPage() {
   }, [filterType, searchTerm, transactions]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    return (value || 0).toLocaleString('pt-MZ') + ' MT';
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('pt-BR', {
+    return new Date(dateStr).toLocaleDateString('pt-MZ', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

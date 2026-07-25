@@ -94,7 +94,7 @@ export default function ClientesPage() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('pt-BR', {
+    return new Date(dateStr).toLocaleDateString('pt-MZ', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

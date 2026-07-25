@@ -111,7 +111,7 @@ export default function AdminNotificationsPage() {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map((p) => p.id);
+    return (data || []).map((p: { id: string }) => p.id);
   }
 
   async function handleSend() {

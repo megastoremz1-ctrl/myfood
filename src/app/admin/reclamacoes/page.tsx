@@ -319,7 +319,7 @@ export default function ReclamacoesPage() {
                   </span>
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {new Date(complaint.created_at).toLocaleString('pt-BR')}
+                    {new Date(complaint.created_at).toLocaleString('pt-MZ')}
                   </span>
                 </div>
 
