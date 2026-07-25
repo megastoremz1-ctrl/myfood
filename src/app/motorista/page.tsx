@@ -111,7 +111,7 @@ export default function DriverPage() {
         .gte('actual_delivery_time', todayStart.toISOString());
 
       if (deliveredToday) {
-        const totalEarnings = deliveredToday.reduce((sum, order) => sum + (order.total * 0.15), 0);
+        const totalEarnings = deliveredToday.reduce((sum: number, order: any) => sum + (order.total * 0.15), 0);
         setEarningsToday(totalEarnings);
       }
     } catch (error) {
