@@ -1,118 +1,148 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Plus, Edit3, Trash2, Eye, EyeOff, Search, X, Save, Image, Upload, Camera } from 'lucide-react';
-import { menuItems as initialMenuItems, MenuItem } from '@/data/mock';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, Search, X, Save, Loader2, RefreshCw, Image } from 'lucide-react';
+import { getSupabase } from '@/lib/supabase';
 
-interface MenuItemWithAvailability extends MenuItem {
+interface MenuCategory {
+  id: string;
+  name: string;
+}
+
+interface MenuItemExtra {
+  id: string;
+  name: string;
+  price: number;
+  menu_item_id: string;
+}
+
+interface MenuItemRow {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
   available: boolean;
+  category_id: string;
+  restaurant_id: string;
+  sort_order: number;
+  menu_categories: { name: string } | null;
+  menu_item_extras: MenuItemExtra[];
 }
 
 interface FormData {
   name: string;
   description: string;
   price: number;
-  category: string;
-  image: string;
+  category_id: string;
+  image_url: string;
 }
-
-type ImageMode = 'upload' | 'url';
 
 const emptyForm: FormData = {
   name: '',
   description: '',
   price: 0,
-  category: 'Entradas',
-  image: '',
+  category_id: '',
+  image_url: '',
 };
 
-const categoryOptions = ['Entradas', 'Pratos Principais', 'Bebidas', 'Sobremesas'];
-const filterCategories = ['all', ...categoryOptions];
-
 export default function PartnerMenuPage() {
-  const [items, setItems] = useState<MenuItemWithAvailability[]>(
-    initialMenuItems.map((i) => ({ ...i, available: true }))
-  );
+  const [items, setItems] = useState<MenuItemRow[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItemWithAvailability | null>(null);
+  const [editingItem, setEditingItem] = useState<MenuItemRow | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
-  const [imageMode, setImageMode] = useState<ImageMode>('upload');
   const [imagePreview, setImagePreview] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const supabase = getSupabase();
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor selecione um ficheiro de imagem (JPG, PNG, WEBP)');
-      return;
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: restaurant } = await supabase
+        .from('restaurants')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single();
+
+      if (!restaurant) return;
+      setRestaurantId(restaurant.id);
+
+      const { data: items } = await supabase
+        .from('menu_items')
+        .select('*, menu_categories(name), menu_item_extras(*)')
+        .eq('restaurant_id', restaurant.id)
+        .order('sort_order');
+
+      setItems((items as MenuItemRow[]) || []);
+
+      const { data: cats } = await supabase
+        .from('menu_categories')
+        .select('id, name')
+        .eq('restaurant_id', restaurant.id)
+        .order('name');
+
+      setCategories((cats as MenuCategory[]) || []);
+    } catch (error) {
+      console.error('Erro ao carregar menu:', error);
+    } finally {
+      setLoading(false);
     }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('A imagem deve ter no maximo 5MB');
-      return;
-    }
-
-    // Create preview using FileReader
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setImagePreview(dataUrl);
-      setFormData((prev) => ({ ...prev, image: dataUrl }));
-    };
-    reader.readAsDataURL(file);
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  const removeImage = () => {
-    setImagePreview('');
-    setFormData((prev) => ({ ...prev, image: '' }));
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = items.filter((i) => {
-    const matchSearch =
-      i.name.toLowerCase().includes(search.toLowerCase()) ||
-      i.description.toLowerCase().includes(search.toLowerCase());
-    const matchCat = filterCat === 'all' || i.category === filterCat;
+    const matchSearch = i.name.toLowerCase().includes(search.toLowerCase());
+    const matchCat = filterCat === 'all' || i.category_id === filterCat;
     return matchSearch && matchCat;
   });
 
   const availableCount = items.filter((i) => i.available).length;
 
-  const toggleAvailability = (id: string) => {
+  const toggleAvailability = async (item: MenuItemRow) => {
+    const newAvailable = !item.available;
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, available: !i.available } : i))
+      prev.map((i) => (i.id === item.id ? { ...i, available: newAvailable } : i))
     );
+    await supabase
+      .from('menu_items')
+      .update({ available: newAvailable })
+      .eq('id', item.id);
   };
 
   const openAddModal = () => {
     setEditingItem(null);
-    setFormData(emptyForm);
+    setFormData({
+      ...emptyForm,
+      category_id: categories.length > 0 ? categories[0].id : '',
+    });
     setImagePreview('');
-    setImageMode('upload');
     setShowModal(true);
   };
 
-  const openEditModal = (item: MenuItemWithAvailability) => {
+  const openEditModal = (item: MenuItemRow) => {
     setEditingItem(item);
     setFormData({
       name: item.name,
-      description: item.description,
+      description: item.description || '',
       price: item.price,
-      category: item.category,
-      image: item.image,
+      category_id: item.category_id || '',
+      image_url: item.image_url || '',
     });
-    setImagePreview(item.image);
-    setImageMode(item.image.startsWith('data:') ? 'upload' : 'url');
+    setImagePreview(item.image_url || '');
     setShowModal(true);
   };
 
@@ -124,40 +154,105 @@ export default function PartnerMenuPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSave = () => {
-    if (!formData.name.trim() || !formData.description.trim() || formData.price <= 0) {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecione um ficheiro de imagem (JPG, PNG, WEBP)');
       return;
     }
 
-    if (editingItem) {
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === editingItem.id
-            ? { ...i, ...formData }
-            : i
-        )
-      );
-    } else {
-      const newItem: MenuItemWithAvailability = {
-        id: `m${Date.now()}`,
-        name: formData.name,
-        description: formData.description,
-        price: formData.price,
-        category: formData.category,
-        image: formData.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-        available: true,
-      };
-      setItems((prev) => [...prev, newItem]);
+    if (file.size > 5 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 5MB');
+      return;
     }
 
-    closeModal();
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setImagePreview(dataUrl);
+      setFormData((prev) => ({ ...prev, image_url: dataUrl }));
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`)) {
+  const handleSave = async () => {
+    if (!formData.name.trim() || formData.price <= 0 || !restaurantId) return;
+
+    setSaving(true);
+    try {
+      if (editingItem) {
+        const { error } = await supabase
+          .from('menu_items')
+          .update({
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            price: formData.price,
+            category_id: formData.category_id || null,
+            image_url: formData.image_url,
+          })
+          .eq('id', editingItem.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('menu_items')
+          .insert({
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            price: formData.price,
+            category_id: formData.category_id || null,
+            image_url: formData.image_url,
+            restaurant_id: restaurantId,
+            available: true,
+            sort_order: items.length,
+          });
+
+        if (error) throw error;
+      }
+
+      closeModal();
+      await fetchData();
+    } catch (error) {
+      console.error('Erro ao salvar item:', error);
+      alert('Erro ao salvar item. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir item:', error);
+      alert('Erro ao excluir item. Tente novamente.');
     }
   };
+
+  const getCategoryName = (categoryId: string) => {
+    const cat = categories.find((c) => c.id === categoryId);
+    return cat?.name || '';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-6">
@@ -169,12 +264,21 @@ export default function PartnerMenuPage() {
             {items.length} itens no menu • {availableCount} disponíveis
           </p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="btn-primary text-sm py-2.5 px-4 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Novo Item
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchData}
+            className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+            title="Atualizar"
+          >
+            <RefreshCw className="w-4 h-4 text-gray-600" />
+          </button>
+          <button
+            onClick={openAddModal}
+            className="btn-primary text-sm py-2.5 px-4 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Novo Item
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -186,22 +290,32 @@ export default function PartnerMenuPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Pesquisar por nome ou descrição..."
+              placeholder="Pesquisar por nome..."
               className="input-field pl-10 text-sm"
             />
           </div>
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {filterCategories.map((cat) => (
+            <button
+              onClick={() => setFilterCat('all')}
+              className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
+                filterCat === 'all'
+                  ? 'bg-secondary-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Todos
+            </button>
+            {categories.map((cat) => (
               <button
-                key={cat}
-                onClick={() => setFilterCat(cat)}
+                key={cat.id}
+                onClick={() => setFilterCat(cat.id)}
                 className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
-                  filterCat === cat
+                  filterCat === cat.id
                     ? 'bg-secondary-500 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {cat === 'all' ? 'Todos' : cat}
+                {cat.name}
               </button>
             ))}
           </div>
@@ -220,10 +334,16 @@ export default function PartnerMenuPage() {
         {filtered.length === 0 ? (
           <div className="card p-8 text-center">
             <Image className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Nenhum item encontrado</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Tente ajustar os filtros ou adicione novos itens ao menu.
+            <p className="text-gray-500 font-medium">
+              {items.length === 0
+                ? 'Nenhum item no menu. Adicione o primeiro prato!'
+                : 'Nenhum item encontrado'}
             </p>
+            {items.length > 0 && (
+              <p className="text-sm text-gray-400 mt-1">
+                Tente ajustar os filtros ou adicione novos itens ao menu.
+              </p>
+            )}
           </div>
         ) : (
           filtered.map((item) => (
@@ -233,11 +353,17 @@ export default function PartnerMenuPage() {
                 !item.available ? 'opacity-60' : ''
               }`}
             >
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-              />
+              {item.image_url ? (
+                <img
+                  src={item.image_url}
+                  alt={item.name}
+                  className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <Image className="w-6 h-6 text-gray-400" />
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-gray-900 text-sm truncate">
@@ -249,19 +375,23 @@ export default function PartnerMenuPage() {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                {item.description && (
+                  <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                )}
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-sm font-bold text-primary-600">
                     {item.price.toFixed(0)} MT
                   </span>
-                  <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                    {item.category}
-                  </span>
+                  {item.menu_categories?.name && (
+                    <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                      {item.menu_categories.name}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button
-                  onClick={() => toggleAvailability(item.id)}
+                  onClick={() => toggleAvailability(item)}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
                     item.available
                       ? 'bg-secondary-50 text-secondary-500 hover:bg-secondary-100'
@@ -382,15 +512,16 @@ export default function PartnerMenuPage() {
                     Categoria
                   </label>
                   <select
-                    value={formData.category}
+                    value={formData.category_id}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, category: e.target.value }))
+                      setFormData((prev) => ({ ...prev, category_id: e.target.value }))
                     }
                     className="input-field text-sm"
                   >
-                    {categoryOptions.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    <option value="">Sem categoria</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
                       </option>
                     ))}
                   </select>
@@ -403,114 +534,61 @@ export default function PartnerMenuPage() {
                   Imagem do prato
                 </label>
 
-                {/* Mode toggle */}
-                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setImageMode('upload')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                      imageMode === 'upload' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                    }`}
-                  >
-                    <Upload className="w-3.5 h-3.5" /> Do dispositivo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImageMode('url')}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                      imageMode === 'url' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                    }`}
-                  >
-                    <Image className="w-3.5 h-3.5" /> URL
-                  </button>
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
+                {/* Image URL input */}
+                <div className="relative mb-3">
+                  <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="url"
+                    value={formData.image_url.startsWith('data:') ? '' : formData.image_url}
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, image_url: e.target.value }));
+                      setImagePreview(e.target.value);
+                    }}
+                    placeholder="URL da imagem ou carregue do dispositivo"
+                    className="input-field pl-10 text-sm"
+                  />
                 </div>
 
-                {imageMode === 'upload' ? (
-                  <div>
-                    {/* Hidden file input */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
+                {/* Upload button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-primary-400 hover:bg-primary-50/50 transition-colors"
+                >
+                  Ou carregue uma imagem do dispositivo
+                </button>
 
-                    {/* Upload area */}
-                    {!imagePreview || imagePreview.startsWith('http') ? (
-                      <button
-                        type="button"
-                        onClick={triggerFileInput}
-                        className="w-full h-36 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary-400 hover:bg-primary-50/50 transition-colors cursor-pointer"
-                      >
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                          <Camera className="w-6 h-6 text-gray-400" />
-                        </div>
-                        <p className="text-sm text-gray-500 font-medium">Carregar imagem</p>
-                        <p className="text-[10px] text-gray-400">JPG, PNG ou WEBP (max 5MB)</p>
-                      </button>
-                    ) : (
-                      <div className="relative">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="w-full h-36 object-cover rounded-xl border border-gray-200"
-                        />
-                        <div className="absolute top-2 right-2 flex gap-1.5">
-                          <button
-                            type="button"
-                            onClick={triggerFileInput}
-                            className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white shadow-sm"
-                            title="Alterar imagem"
-                          >
-                            <Upload className="w-4 h-4 text-gray-600" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={removeImage}
-                            className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white shadow-sm"
-                            title="Remover imagem"
-                          >
-                            <X className="w-4 h-4 text-red-500" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <div className="relative">
-                      <Image className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="url"
-                        value={formData.image.startsWith('data:') ? '' : formData.image}
-                        onChange={(e) => {
-                          setFormData((prev) => ({ ...prev, image: e.target.value }));
-                          setImagePreview(e.target.value);
-                        }}
-                        placeholder="https://exemplo.com/imagem.jpg"
-                        className="input-field pl-10 text-sm"
-                      />
-                    </div>
-                    {formData.image && !formData.image.startsWith('data:') && (
-                      <div className="mt-2 rounded-xl overflow-hidden border border-gray-200 relative">
-                        <img
-                          src={formData.image}
-                          alt="Preview"
-                          className="w-full h-32 object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          className="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-lg flex items-center justify-center hover:bg-white shadow-sm"
-                        >
-                          <X className="w-3.5 h-3.5 text-red-500" />
-                        </button>
-                      </div>
-                    )}
+                {/* Preview */}
+                {imagePreview && (
+                  <div className="mt-3 relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-36 object-cover rounded-xl border border-gray-200"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImagePreview('');
+                        setFormData((prev) => ({ ...prev, image_url: '' }));
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-lg flex items-center justify-center hover:bg-white shadow-sm"
+                    >
+                      <X className="w-3.5 h-3.5 text-red-500" />
+                    </button>
                   </div>
                 )}
               </div>
@@ -526,10 +604,14 @@ export default function PartnerMenuPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!formData.name.trim() || !formData.description.trim() || formData.price <= 0}
+                disabled={!formData.name.trim() || formData.price <= 0 || saving}
                 className="flex-1 btn-primary text-sm py-2.5 px-4 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Save className="w-4 h-4" />
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 {editingItem ? 'Guardar Alterações' : 'Adicionar Item'}
               </button>
             </div>
