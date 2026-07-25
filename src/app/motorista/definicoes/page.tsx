@@ -1,86 +1,171 @@
 'use client';
 
-import { useState } from 'react';
-import { User, Phone, MapPin, Bike, CreditCard, Bell, Shield, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Phone, Bike, Save, Loader2 } from 'lucide-react';
+import { getSupabase } from '@/lib/supabase';
 
 export default function DriverSettingsPage() {
-  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  // Profile fields
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+
+  // Vehicle fields
+  const [vehicleType, setVehicleType] = useState('');
+  const [vehiclePlate, setVehiclePlate] = useState('');
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const supabase = getSupabase();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) return;
+
+        const { data: driver } = await supabase.from('drivers').select('*').eq('id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+
+        if (profile) {
+          setFullName(profile.full_name || '');
+          setPhone(profile.phone || '');
+        }
+
+        if (driver) {
+          setVehicleType(driver.vehicle_type || '');
+          setVehiclePlate(driver.vehicle_plate || '');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSuccessMessage('');
+
+    try {
+      const supabase = getSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      await supabase.from('profiles').update({ full_name: fullName, phone }).eq('id', user.id);
+      await supabase.from('drivers').update({ vehicle_type: vehicleType, vehicle_plate: vehiclePlate }).eq('id', user.id);
+
+      setSuccessMessage('Alterações guardadas com sucesso!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Erro ao guardar:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  return (
-    <div>
-      <h2 className="text-lg font-bold text-gray-900 mb-6">Definicoes</h2>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
-      {/* Profile */}
+  return (
+    <div className="max-w-md mx-auto">
+      <h2 className="text-lg font-bold text-gray-900 mb-6">Definições</h2>
+
+      {/* Profile Section */}
       <div className="card p-4 mb-4">
         <h3 className="font-semibold text-gray-900 text-sm mb-3">Perfil</h3>
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-            <User className="w-4 h-4 text-gray-500" />
-            <div className="flex-1">
-              <p className="text-xs text-gray-500">Nome</p>
-              <p className="text-sm text-gray-900">Carlos Muthemba</p>
-            </div>
+          <div>
+            <label className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <User className="w-4 h-4" />
+              Nome completo
+            </label>
+            <input
+              type="text"
+              className="input-field"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Seu nome completo"
+            />
           </div>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-            <Phone className="w-4 h-4 text-gray-500" />
-            <div className="flex-1">
-              <p className="text-xs text-gray-500">Telefone</p>
-              <p className="text-sm text-gray-900">+258 84 777 8888</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-            <Bike className="w-4 h-4 text-gray-500" />
-            <div className="flex-1">
-              <p className="text-xs text-gray-500">Veiculo</p>
-              <p className="text-sm text-gray-900">Honda PCX - MAG-1234</p>
-            </div>
+          <div>
+            <label className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <Phone className="w-4 h-4" />
+              Telefone
+            </label>
+            <input
+              type="tel"
+              className="input-field"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+258 84 000 0000"
+            />
           </div>
         </div>
       </div>
 
-      {/* Payment */}
+      {/* Vehicle Section */}
       <div className="card p-4 mb-4">
-        <h3 className="font-semibold text-gray-900 text-sm mb-3">Metodo de levantamento</h3>
-        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-          <CreditCard className="w-4 h-4 text-gray-500" />
-          <div className="flex-1">
-            <p className="text-xs text-gray-500">M-Pesa</p>
-            <p className="text-sm text-gray-900">+258 84 777 8888</p>
-          </div>
-          <button className="text-xs text-primary-500 font-medium">Alterar</button>
-        </div>
-      </div>
-
-      {/* Preferences */}
-      <div className="card p-4 mb-4">
-        <h3 className="font-semibold text-gray-900 text-sm mb-3">Preferencias</h3>
+        <h3 className="font-semibold text-gray-900 text-sm mb-3">Veículo</h3>
         <div className="space-y-3">
-          {[
-            { icon: Bell, label: 'Notificacoes de entregas', active: true },
-            { icon: MapPin, label: 'Partilhar localizacao', active: true },
-            { icon: Shield, label: 'Verificacao em 2 passos', active: false },
-          ].map(({ icon: Icon, label, active }) => (
-            <div key={label} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Icon className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-700">{label}</span>
-              </div>
-              <div className={`w-10 h-5 rounded-full transition-colors ${active ? 'bg-secondary-500' : 'bg-gray-300'}`}>
-                <div className={`w-4 h-4 bg-white rounded-full shadow mt-0.5 transition-all ${active ? 'ml-5' : 'ml-0.5'}`} />
-              </div>
-            </div>
-          ))}
+          <div>
+            <label className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <Bike className="w-4 h-4" />
+              Tipo de veículo
+            </label>
+            <input
+              type="text"
+              className="input-field"
+              value={vehicleType}
+              onChange={(e) => setVehicleType(e.target.value)}
+              placeholder="Ex: Moto, Bicicleta"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <Bike className="w-4 h-4" />
+              Matrícula
+            </label>
+            <input
+              type="text"
+              className="input-field"
+              value={vehiclePlate}
+              onChange={(e) => setVehiclePlate(e.target.value)}
+              placeholder="Ex: MAG-1234"
+            />
+          </div>
         </div>
       </div>
 
-      <button onClick={handleSave} className="w-full btn-primary text-sm flex items-center justify-center gap-2">
-        <Save className="w-4 h-4" />
-        {saved ? 'Guardado!' : 'Guardar alteracoes'}
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-xl text-center">
+          {successMessage}
+        </div>
+      )}
+
+      {/* Save Button */}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full btn-primary text-sm flex items-center justify-center gap-2"
+      >
+        {saving ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Save className="w-4 h-4" />
+        )}
+        {saving ? 'Guardando...' : 'Guardar alterações'}
       </button>
     </div>
   );

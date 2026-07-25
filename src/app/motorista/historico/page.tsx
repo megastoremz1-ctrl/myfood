@@ -1,59 +1,146 @@
 'use client';
 
-import { CheckCircle, Star, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { getSupabase } from '@/lib/supabase';
+import { CheckCircle, Clock, DollarSign, Loader2, RefreshCw, Star, Package } from 'lucide-react';
 
-const history = [
-  { id: 'H-001', restaurant: 'Cafe Central', customer: 'Ana L.', time: '14:30', earnings: 65, rating: 5, distance: '1.2 km' },
-  { id: 'H-002', restaurant: 'Sushi Master', customer: 'Pedro M.', time: '13:15', earnings: 120, rating: 5, distance: '3.5 km' },
-  { id: 'H-003', restaurant: 'Frango Piri-Piri', customer: 'Carlos F.', time: '12:00', earnings: 75, rating: 4, distance: '1.8 km' },
-  { id: 'H-004', restaurant: "Mundo's Restaurant", customer: 'Maria S.', time: '11:20', earnings: 90, rating: 5, distance: '2.1 km' },
-  { id: 'H-005', restaurant: 'Pizza House Maputo', customer: 'Joao P.', time: '10:45', earnings: 85, rating: 5, distance: '2.3 km' },
-  { id: 'H-006', restaurant: 'Doce Tentacao', customer: 'Sara M.', time: '09:30', earnings: 55, rating: 4, distance: '1.5 km' },
-  { id: 'H-007', restaurant: 'Cafe Central', customer: 'Luis A.', time: '09:00', earnings: 60, rating: 5, distance: '0.8 km' },
-  { id: 'H-008', restaurant: 'Frango Piri-Piri', customer: 'Rita C.', time: '08:30', earnings: 70, rating: 5, distance: '1.9 km' },
-];
+interface DeliveryOrder {
+  id: string;
+  total: number;
+  created_at: string;
+  restaurants: { name: string } | null;
+  profiles: { full_name: string } | null;
+}
 
-export default function DriverHistoryPage() {
-  const totalEarnings = history.reduce((sum, h) => sum + h.earnings, 0);
+export default function HistoricoPage() {
+  const [deliveries, setDeliveries] = useState<DeliveryOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDeliveries = async () => {
+    setLoading(true);
+    try {
+      const supabase = getSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, restaurants(name), profiles!orders_customer_id_fkey(full_name)')
+        .eq('driver_id', user.id)
+        .eq('status', 'delivered')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Erro ao buscar entregas:', error);
+        return;
+      }
+
+      setDeliveries(data || []);
+    } catch (err) {
+      console.error('Erro:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDeliveries();
+  }, []);
+
+  const totalDeliveries = deliveries.length;
+  const totalEarnings = deliveries.reduce((sum, d) => sum + (d.total * 0.15), 0);
+  const averagePerDelivery = totalDeliveries > 0 ? totalEarnings / totalDeliveries : 0;
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-MZ', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="p-4 pb-24 max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Historico de hoje</h2>
-          <p className="text-sm text-gray-500">{history.length} entregas concluidas</p>
+        <h1 className="text-2xl font-bold text-gray-800">Histórico de Entregas</h1>
+        <button
+          onClick={fetchDeliveries}
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <RefreshCw className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="card p-3 text-center">
+          <Package className="w-5 h-5 text-orange-500 mx-auto mb-1" />
+          <p className="text-lg font-bold text-gray-800">{totalDeliveries}</p>
+          <p className="text-xs text-gray-500">Total entregas</p>
         </div>
-        <div className="text-right">
-          <p className="text-lg font-bold text-secondary-600">{totalEarnings} MT</p>
-          <p className="text-xs text-gray-500">Total ganho</p>
+        <div className="card p-3 text-center">
+          <DollarSign className="w-5 h-5 text-green-500 mx-auto mb-1" />
+          <p className="text-lg font-bold text-gray-800">{totalEarnings.toFixed(2)} MT</p>
+          <p className="text-xs text-gray-500">Total ganhos</p>
+        </div>
+        <div className="card p-3 text-center">
+          <Star className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
+          <p className="text-lg font-bold text-gray-800">{averagePerDelivery.toFixed(2)} MT</p>
+          <p className="text-xs text-gray-500">Média/entrega</p>
         </div>
       </div>
 
-      <div className="space-y-2">
-        {history.map((delivery) => (
-          <div key={delivery.id} className="card p-4 flex items-center gap-3">
-            <div className="w-9 h-9 bg-secondary-50 rounded-xl flex items-center justify-center flex-shrink-0">
-              <CheckCircle className="w-4 h-4 text-secondary-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900">{delivery.restaurant}</p>
-              <p className="text-xs text-gray-500">{delivery.customer} - {delivery.distance}</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Clock className="w-3 h-3 text-gray-400" />
-                <span className="text-[10px] text-gray-400">{delivery.time}</span>
+      {/* Delivery List */}
+      {deliveries.length === 0 ? (
+        <div className="card p-8 text-center">
+          <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">Nenhuma entrega concluída</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {deliveries.map((delivery) => (
+            <div key={delivery.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="font-semibold text-gray-800">
+                      {delivery.restaurants?.name || 'Restaurante'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 ml-6">
+                    Cliente: {delivery.profiles?.full_name || 'Cliente'}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1 ml-6">
+                    <Clock className="w-3 h-3 text-gray-400" />
+                    <span className="text-xs text-gray-400">
+                      {formatDate(delivery.created_at)}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">Total: {delivery.total.toFixed(2)} MT</p>
+                  <p className="text-sm font-bold text-green-600">
+                    +{(delivery.total * 0.15).toFixed(2)} MT
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-sm font-bold text-gray-900">+{delivery.earnings} MT</p>
-              <div className="flex items-center gap-0.5 justify-end mt-0.5">
-                {Array.from({ length: delivery.rating }).map((_, i) => (
-                  <Star key={i} className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
